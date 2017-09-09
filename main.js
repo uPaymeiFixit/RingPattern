@@ -25,28 +25,38 @@ let ring_count;
 
 // Init function
 window.onload = () => {
-	ctx = new Canvas({color: '#222222', dblclick_fullscreen: true});
-	ctx.canvas.addEventListener('click', changeTheme);
-	ctx.canvas.addEventListener('mousewheel', scroll);
-	setup();
+	ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+
+	window.onresize = resize;
+	window.ondblclick = ctx.canvas.webkitRequestFullScreen;
+	window.onmousewheel = scroll;
+	window.onclick = changeTheme;
+
+	resize();
+	getRingCount();
+
 	for (let i = 0; i < ring_count; i++) {
 		linear_progress[i] = Math.random() * Math.PI;
 		counterclockwise[i] = Math.random() < 0.5 ? false : true;
 	}
 
-	requestAnimationFrame(animate);
+	window.requestAnimationFrame(animate);
 }
 
-function setup () {
-	ctx.lineWidth = ring_width + 1;
-
-	// Calculate the number of rings to generate
+// Calculate the number of rings to generate
+function getRingCount () {
 	const maximum_radius = Math.sqrt(Math.pow(ctx.canvas.width, 2) + Math.pow(ctx.canvas.height, 2)) / 2;
 	const effective_width = ring_width + ring_spacing;
 	ring_count = Math.ceil(maximum_radius / effective_width);
 	if (ring_count > 500) {
 		ring_count = 500;
 	}
+}
+
+function resize () {
+	ctx.canvas.width = window.innerWidth;
+	ctx.canvas.height = window.innerHeight;
+	ctx.lineWidth = ring_width;
 }
 
 // Iterates through the color schemes
@@ -68,7 +78,8 @@ function scroll () {
 
 	const old_ring_count = ring_count;
 
-	setup();
+	resize();
+	getRingCount();
 
 	for (let i = old_ring_count; i < ring_count; i++) {
 		linear_progress[i] = Math.random() * Math.PI;
@@ -78,7 +89,7 @@ function scroll () {
 
 // Calculate ring positions
 function animate () {
-	requestAnimationFrame(animate);
+	window.requestAnimationFrame(animate);
 
 	for (let i = 0; i < ring_count; i++) {
 		// Increase the linear position
