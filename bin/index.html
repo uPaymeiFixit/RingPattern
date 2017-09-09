@@ -1,0 +1,221 @@
+<!doctype html> <html> <head> <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> <meta name="author" content="Josh Gibbs"> <title>Ring Pattern</title> <script language="JavaScript" type="text/javascript">/**
+ * @author paulirish / http://paulirish.com/
+ * @author Josh Gibbs – uPaymeiFixit@gmail.com
+ * Source: http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+ *
+ * Description:
+ *  Uses the official defines requestAnimationFrame as the official RequestAnimationFrame for the current browser
+ *  The official RequestAnimationFrame is used to sync a callback function with the screen refresh rate
+ *
+ * Usage:
+ *  ExampleLoop()
+ *  function ExampleLoop() {
+ *    requestAnimationFrame( ExampleLoop )
+ *    //do stuff
+ *  }
+ *
+ * @param {function} - The function you want to call for the next animation frame
+ */
+
+window.requestAnimationFrame = (() => {
+    return window.requestAnimationFrame ||
+    window.webkitRequestAnimationFrame   ||
+    window.mozRequestAnimationFrame      ||
+    window.oRequestAnimationFrame        ||
+    window.msRequestAnimationFrame       ||
+    function (callback) {
+        window.setTimeout(callback, 1000 / 60);
+    };
+})();</script> <script language="JavaScript" type="text/javascript">/**
+* Canvas r2017-09-08
+* @author Josh Gibbs - uPaymeiFixit@gmail.com
+*
+* Creates a new canvas DOM element to draw on
+*
+* Usage:
+* let ctx = new Canvas();
+*
+* Optional object items:
+* x: x position of the canvas (default: 0),
+* y: y position of the canvas (default: 0),
+* width: width of the canvas (default: screen width),
+* heigh: height of the canvas (default: screen height),
+*   color: background color of the canvas (default: white)
+*   style: object containing CSS properties (backgroundColor: 'black')
+*   dblclick_fullscreen: {boolean} Allows fullscreen on double click (default: false)
+*
+* @param   {Object} [options] - Options
+* @returns {Object} HTML Canvas Reference
+*/
+
+function Canvas (options) {
+    options = options || {};
+    options.style = options.style || {};
+
+    // Canvas setup
+    const context = document.createElement('canvas').getContext('2d');
+    context.canvas.innerHTML = 'Your browser does not fully support HTML5';
+    context.canvas.id = document.getElementsByTagName('canvas').length;
+    context.canvas.style.position = 'absolute';
+    context.canvas.style.left = options.x || 0;
+    context.canvas.style.top = options.y || 0;
+    context.canvas.style.right = 0;
+    context.canvas.style.bottom = 0;
+    context.canvas.style.backgroundColor = options.color || 'white';
+
+    // Apply any styles given
+    for (let i in options) {
+        context.canvas.style[i] = options.style[i];
+    }
+
+    // Define fullscreen method
+    context.fullscreen = () => {
+        if (context.canvas.requestFullscreen) {
+            context.canvas.requestFullscreen();
+        } else if (context.canvas.msRequestFullscreen) {
+            context.canvas.msRequestFullscreen();
+        } else if (context.canvas.mozRequestFullScreen) {
+            this.canvas.mozRequestFullScreen();
+        } else if (context.canvas.webkitRequestFullscreen) {
+            context.canvas.webkitRequestFullscreen();
+        }
+    }
+
+    // If dblclick_fullscreen was toggled, assign it to fullscreen function
+    if (options.dblclick_fullscreen) {
+        context.canvas.ondblclick = context.fullscreen;
+    }
+
+    context.resize = () => {
+        context.width = options.width || window.innerWidth;
+        context.height = options.height || window.innerHeight;
+        context.canvas.width = context.width;
+        context.canvas.height = context.height;
+    };
+
+    context.resize();
+
+    document.body.appendChild(context.canvas);
+    window.onresize = context.resize;
+
+    return context;
+}</script> <script language="JavaScript" type="text/javascript">/**
+ * @author Josh Gibbs (uPaymeiFixit@gmail.com)
+ */
+
+const progress_speed = 0.005;
+let ring_width = 10;
+let ring_spacing = 10;
+const themes = [
+ ['#FF0000','#FF9900','#FFFF00','#00FF00','#00FFEE','#0000FF','#FF00CC','#FFFFFF'],
+ ['#00FFEE','#00CCFF','#00FFAA'],
+ ['#FF0000','#990000','#FFFF00'],
+ ['#00FFEE','#FF9900'],
+ ['#4444FF','#FF00FF'],
+ ['#FFFFFF','#333333','#777777','#CCCCCC','#111111','#EEEEEE','#555555','#DDDDDD','#111111','#AAAAAA','#000000','#BBBBBB','#444444']
+];
+
+let theme_index = Math.floor(Math.random() * themes.length);
+let ring_start_position = [];
+let ring_end_position = [];
+let counterclockwise = [];
+let linear_progress = [];
+let scroll_speed = 0;
+let ctx;
+let ring_count;
+
+// Init function
+window.onload = () => {
+ ctx = new Canvas({color: '#222222', dblclick_fullscreen: true});
+ ctx.canvas.addEventListener('click', changeTheme);
+ ctx.canvas.addEventListener('mousewheel', scroll);
+ setup();
+ for (let i = 0; i < ring_count; i++) {
+  linear_progress[i] = Math.random() * Math.PI;
+  counterclockwise[i] = Math.random() < 0.5 ? false : true;
+ }
+
+ requestAnimationFrame(animate);
+}
+
+function setup () {
+ ctx.lineWidth = ring_width + 1;
+
+ // Calculate the number of rings to generate
+ const maximum_radius = Math.sqrt(Math.pow(ctx.canvas.width, 2) + Math.pow(ctx.canvas.height, 2)) / 2;
+ const effective_width = ring_width + ring_spacing;
+ ring_count = Math.ceil(maximum_radius / effective_width);
+ if (ring_count > 500) {
+  ring_count = 500;
+ }
+}
+
+// Iterates through the color schemes
+function changeTheme () {
+ theme_index = (theme_index + 1) % themes.length;
+}
+
+// Changes iteration frequency on scroll
+function scroll () {
+ ring_spacing -= Math.ceil(window.event.wheelDelta / 240);
+ if (ring_spacing < 0) {
+  ring_spacing = 0;
+ }
+
+ ring_width -= Math.ceil(window.event.wheelDelta / 240);
+ if (ring_width < 1) {
+  ring_width = 1;
+ }
+
+ const old_ring_count = ring_count;
+
+ setup();
+
+ for (let i = old_ring_count; i < ring_count; i++) {
+  linear_progress[i] = Math.random() * Math.PI;
+  counterclockwise[i] = Math.random() < 0.5 ? false : true;
+ }
+}
+
+// Calculate ring positions
+function animate () {
+ requestAnimationFrame(animate);
+
+ for (let i = 0; i < ring_count; i++) {
+  // Increase the linear position
+  linear_progress[i] += progress_speed;
+  if (linear_progress[i] > Math.PI) {
+   linear_progress[i] = 0;
+  }
+
+  // Calculate the starting and stopping points of the ring using sine and cosine for a cool effect
+  ring_start_position[i] = Math.sin(linear_progress[i]);
+  ring_end_position[i] = Math.cos(Math.sin(linear_progress[i]));
+
+  // If the ends meet each other, swap the direction. Do not calculate exactly to achieve flashes
+  if (ring_start_position[i].toFixed(1) === ring_end_position[i].toFixed(1)) {
+   counterclockwise[i] = !counterclockwise[i];
+  }
+ }
+
+ draw();
+}
+
+//Draws the arcs
+function draw () {
+ ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+ for (let i = 0; i < ring_count; i++) {
+  ctx.strokeStyle = themes[theme_index][i % themes[theme_index].length];
+  ctx.beginPath();
+  ctx.arc(
+   ctx.canvas.width / 2, 
+   ctx.canvas.height / 2, 
+   ring_spacing + (ring_width + ring_spacing) * i,
+   Math.PI * 2 * ring_start_position[i],
+   Math.PI * 2 * ring_end_position[i],
+   counterclockwise[i]
+  );
+  ctx.stroke();
+ }
+}</script> </head> </html> 
