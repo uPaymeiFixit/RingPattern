@@ -28,7 +28,7 @@ window.onload = () => {
 	ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
 
 	window.onresize = resize;
-	window.ondblclick = ctx.canvas.webkitRequestFullScreen;
+	ctx.canvas.ondblclick = ctx.canvas.webkitRequestFullScreen;
 	window.onmousewheel = scroll;
 	window.onclick = changeTheme;
 
